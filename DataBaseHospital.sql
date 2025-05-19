@@ -65,6 +65,16 @@ CREATE TABLE `Receita_Medicamento` (
   `instrucoes_uso` TEXT
 );
 
+CREATE TABLE Internacao (
+    id SERIAL PRIMARY KEY,
+    paciente_id INT REFERENCES Paciente(id) ON DELETE CASCADE,
+    data_entrada DATE NOT NULL,
+    data_alta_prevista DATE,
+    data_alta_efetiva DATE,
+    procedimentos TEXT,
+    CONSTRAINT chk_data_alta CHECK (data_alta_efetiva >= data_entrada OR data_alta_efetiva IS NULL)
+);
+
 ALTER TABLE `Medico_Especialidade` COMMENT = 'Relacionamento N:N entre Médico e Especialidade';
 
 ALTER TABLE `Paciente` ADD FOREIGN KEY (`convenio_id`) REFERENCES `Convenio` (`id`);

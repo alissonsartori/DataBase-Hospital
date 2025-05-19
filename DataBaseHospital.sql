@@ -1,96 +1,116 @@
-CREATE TABLE `Convenio` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `nome` VARCHAR(100) NOT NULL,
-  `cnpj` VARCHAR(18) NOT NULL,
-  `tempo_carencia` INT NOT NULL COMMENT 'Número de dias de carência'
-);
-
-CREATE TABLE `Paciente` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `nome` VARCHAR(100) NOT NULL,
-  `data_nascimento` DATE NOT NULL,
-  `endereco` TEXT,
-  `telefone` VARCHAR(20),
-  `email` VARCHAR(100),
-  `cpf` VARCHAR(14) UNIQUE NOT NULL,
-  `rg` VARCHAR(20),
-  `convenio_id` INT
-);
-
-CREATE TABLE `Medico` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `nome` VARCHAR(100) NOT NULL,
-  `cpf` VARCHAR(14) UNIQUE NOT NULL,
-  `data_nascimento` DATE,
-  `endereco` TEXT,
-  `telefone` VARCHAR(20),
-  `email` VARCHAR(100),
-  `tipo` VARCHAR(20) NOT NULL COMMENT 'Generalista, Especialista, Residente'
-);
-
-CREATE TABLE `Especialidade` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `nome` VARCHAR(50) UNIQUE NOT NULL
-);
-
-CREATE TABLE `Medico_Especialidade` (
-  `medico_id` INT,
-  `especialidade_id` INT,
-  `Primary` Key(medico_id,especialidade_id)
-);
-
-CREATE TABLE `Consulta` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `data` DATE NOT NULL,
-  `hora` TIME NOT NULL,
-  `medico_id` INT,
-  `paciente_id` INT,
-  `valor` DECIMAL(10,2),
-  `convenio_id` INT,
-  `numero_carteira` VARCHAR(50),
-  `especialidade_id` INT
-);
-
-CREATE TABLE `Receita` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `consulta_id` INT UNIQUE,
-  `data_emissao` DATETIME DEFAULT (CURRENT_TIMESTAMP)
-);
-
-CREATE TABLE `Receita_Medicamento` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `receita_id` INT,
-  `nome_medicamento` VARCHAR(100) NOT NULL,
-  `quantidade` VARCHAR(20),
-  `instrucoes_uso` TEXT
-);
-
-CREATE TABLE Internacao (
+-- Tabela de Médicos
+CREATE TABLE medicos (
     id SERIAL PRIMARY KEY,
-    paciente_id INT REFERENCES Paciente(id) ON DELETE CASCADE,
-    data_entrada DATE NOT NULL,
-    data_alta_prevista DATE,
-    data_alta_efetiva DATE,
-    procedimentos TEXT,
-    CONSTRAINT chk_data_alta CHECK (data_alta_efetiva >= data_entrada OR data_alta_efetiva IS NULL)
+    nome VARCHAR(255) NOT NULL,
+    tipo VARCHAR(50) CHECK (tipo IN ('generalista', 'especialista', 'residente')) NOT NULL
 );
 
-ALTER TABLE `Medico_Especialidade` COMMENT = 'Relacionamento N:N entre Médico e Especialidade';
+-- Tabela de Especialidades
+CREATE TABLE especialidades (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL
+);
 
-ALTER TABLE `Paciente` ADD FOREIGN KEY (`convenio_id`) REFERENCES `Convenio` (`id`);
+-- Tabela de Relacionamento Médico-Especialidade
+CREATE TABLE medicos_especialidades (
+    medico_id INTEGER NOT NULL,
+    especialidade_id INTEGER NOT NULL,
+    PRIMARY KEY (medico_id, especialidade_id),
+    FOREIGN KEY (medico_id) REFERENCES medicos(id),
+    FOREIGN KEY (especialidade_id) REFERENCES especialidades(id)
+);
 
-ALTER TABLE `Medico_Especialidade` ADD FOREIGN KEY (`medico_id`) REFERENCES `Medico` (`id`);
+-- Tabela de Pacientes
+CREATE TABLE pacientes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    endereco VARCHAR(255),
+    telefone VARCHAR(20),
+    email VARCHAR(100),
+    cpf VARCHAR(14) UNIQUE NOT NULL,
+    rg VARCHAR(20) UNIQUE NOT NULL
+);
 
-ALTER TABLE `Medico_Especialidade` ADD FOREIGN KEY (`especialidade_id`) REFERENCES `Especialidade` (`id`);
+-- Tabela de Convênios
+CREATE TABLE convenios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    cnpj VARCHAR(18) UNIQUE NOT NULL,
+    tempo_carencia INTEGER NOT NULL
+);
 
-ALTER TABLE `Consulta` ADD FOREIGN KEY (`medico_id`) REFERENCES `Medico` (`id`);
+-- Tabela de Relacionamento Paciente-Convênio
+CREATE TABLE pacientes_convenios (
+    paciente_id INTEGER NOT NULL,
+    convenio_id INTEGER NOT NULL,
+    PRIMARY KEY (paciente_id, convenio_id),
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+    FOREIGN KEY (convenio_id) REFERENCES convenios(id)
+);
 
-ALTER TABLE `Consulta` ADD FOREIGN KEY (`paciente_id`) REFERENCES `Paciente` (`id`);
+-- Tabela de Consultas
+CREATE TABLE consultas (
+    id SERIAL PRIMARY KEY,
+    data_hora TIMESTAMP NOT NULL,
+    medico_id INTEGER NOT NULL,
+    paciente_id INTEGER NOT NULL,
+    especialidade_id INTEGER NOT NULL,
+    valor DECIMAL(10, 2),
+    convenio_id INTEGER,
+    numero_carteira VARCHAR(50),
+    FOREIGN KEY (medico_id) REFERENCES medicos(id),
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+    FOREIGN KEY (especialidade_id) REFERENCES especialidades(id),
+    FOREIGN KEY (convenio_id) REFERENCES convenios(id)
+);
 
-ALTER TABLE `Consulta` ADD FOREIGN KEY (`convenio_id`) REFERENCES `Convenio` (`id`);
+-- Tabela de Receitas
+CREATE TABLE receitas (
+    id SERIAL PRIMARY KEY,
+    consulta_id INTEGER NOT NULL,
+    medicamento VARCHAR(255) NOT NULL,
+    quantidade INTEGER NOT NULL,
+    instrucoes TEXT,
+    FOREIGN KEY (consulta_id) REFERENCES consultas(id)
+);
 
-ALTER TABLE `Consulta` ADD FOREIGN KEY (`especialidade_id`) REFERENCES `Especialidade` (`id`);
+-- Tabela de Internações
+CREATE TABLE internacoes (
+    id SERIAL PRIMARY KEY,
+    paciente_id INTEGER NOT NULL,
+    medico_id INTEGER NOT NULL,
+    data_entrada DATE NOT NULL,
+    data_prevista_alta DATE NOT NULL,
+    data_efetiva_alta DATE,
+    descricao_procedimentos TEXT,
+    quarto_id INTEGER NOT NULL,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+    FOREIGN KEY (medico_id) REFERENCES medicos(id),
+    FOREIGN KEY (quarto_id) REFERENCES quartos(id)
+);
 
-ALTER TABLE `Receita` ADD FOREIGN KEY (`consulta_id`) REFERENCES `Consulta` (`id`);
+-- Tabela de Quartos
+CREATE TABLE quartos (
+    id SERIAL PRIMARY KEY,
+    numero INTEGER NOT NULL,
+    tipo VARCHAR(50) CHECK (tipo IN ('apartamento', 'quarto duplo', 'enfermaria')) NOT NULL,
+    valor_diario DECIMAL(10, 2) NOT NULL
+);
 
-ALTER TABLE `Receita_Medicamento` ADD FOREIGN KEY (`receita_id`) REFERENCES `Receita` (`id`);
+-- Tabela de Enfermeiros
+CREATE TABLE enfermeiros (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    cpf VARCHAR(14) UNIQUE NOT NULL,
+    coren VARCHAR(20) UNIQUE NOT NULL
+);
+
+-- Tabela de Relacionamento Internação-Enfermeiro
+CREATE TABLE internacoes_enfermeiros (
+    internacao_id INTEGER NOT NULL,
+    enfermeiro_id INTEGER NOT NULL,
+    PRIMARY KEY (internacao_id, enfermeiro_id),
+    FOREIGN KEY (internacao_id) REFERENCES internacoes(id),
+    FOREIGN KEY (enfermeiro_id) REFERENCES enfermeiros(id)
+);

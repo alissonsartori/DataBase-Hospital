@@ -73,7 +73,7 @@ Informatizar e centralizar os dados das consultas médicas realizadas no hospita
 - Ferramentas de modelagem (MySQL Workbench e dbdiagram.io)
 ---
 ## Diagrama Entidade Relacionamento
-<img align='center' src='DER.png'/>
+<img align='center' src='DiagramaER-HospitalFundamental.drawio.png'/>
 
 ## 📄 Licença
 
